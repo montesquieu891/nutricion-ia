@@ -10,6 +10,7 @@ from app.db.session import get_db
 from app.models.dieta import Dieta, User
 from app.services.openai_service import OpenAIService
 from app.services.dependencies import get_openai_service
+from app.api.dependencies import get_current_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ class DietaBase(BaseModel):
 
 class DietaCreate(DietaBase):
     """Modelo para crear dieta"""
-    user_id: int
+    pass  # user_id will come from authenticated user
 
 
 class DietaUpdate(BaseModel):
@@ -47,7 +48,6 @@ class DietaResponse(DietaBase):
 
 class GenerarDietaRequest(BaseModel):
     """Modelo para solicitud de generación de dieta con IA"""
-    user_id: int = Field(..., description="ID del usuario")
     objetivo_calorias: int = Field(..., gt=0, description="Objetivo de calorías diarias")
     preferencias: Optional[List[str]] = Field(None, description="Preferencias alimenticias")
     restricciones: Optional[List[str]] = Field(None, description="Restricciones dietéticas")
@@ -71,18 +71,23 @@ class GenerarDietaResponse(BaseModel):
 async def listar_dietas(
     skip: int = 0,
     limit: int = 10,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Listar todas las dietas"""
-    dietas = db.query(Dieta).offset(skip).limit(limit).all()
+    """Listar las dietas del usuario autenticado"""
+    dietas = db.query(Dieta).filter(Dieta.user_id == current_user.id).offset(skip).limit(limit).all()
     return dietas
 
 
 @router.post("/", response_model=DietaResponse, status_code=201)
-async def crear_dieta(dieta: DietaCreate, db: Session = Depends(get_db)):
-    """Crear una nueva dieta"""
+async def crear_dieta(
+    dieta: DietaCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Crear una nueva dieta para el usuario autenticado"""
     db_dieta = Dieta(
-        user_id=dieta.user_id,
+        user_id=current_user.id,
         nombre=dieta.nombre,
         descripcion=dieta.descripcion,
         pdf_url=dieta.pdf_url
@@ -94,9 +99,16 @@ async def crear_dieta(dieta: DietaCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{dieta_id}", response_model=DietaResponse)
-async def obtener_dieta(dieta_id: int, db: Session = Depends(get_db)):
-    """Obtener una dieta específica"""
-    dieta = db.query(Dieta).filter(Dieta.id == dieta_id).first()
+async def obtener_dieta(
+    dieta_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener una dieta específica del usuario autenticado"""
+    dieta = db.query(Dieta).filter(
+        Dieta.id == dieta_id,
+        Dieta.user_id == current_user.id
+    ).first()
     if not dieta:
         raise HTTPException(status_code=404, detail="Dieta no encontrada")
     return dieta
@@ -106,10 +118,14 @@ async def obtener_dieta(dieta_id: int, db: Session = Depends(get_db)):
 async def actualizar_dieta(
     dieta_id: int,
     dieta_update: DietaUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Actualizar una dieta existente"""
-    dieta = db.query(Dieta).filter(Dieta.id == dieta_id).first()
+    """Actualizar una dieta existente del usuario autenticado"""
+    dieta = db.query(Dieta).filter(
+        Dieta.id == dieta_id,
+        Dieta.user_id == current_user.id
+    ).first()
     if not dieta:
         raise HTTPException(status_code=404, detail="Dieta no encontrada")
     
@@ -123,9 +139,16 @@ async def actualizar_dieta(
 
 
 @router.delete("/{dieta_id}", status_code=204)
-async def eliminar_dieta(dieta_id: int, db: Session = Depends(get_db)):
-    """Eliminar una dieta"""
-    dieta = db.query(Dieta).filter(Dieta.id == dieta_id).first()
+async def eliminar_dieta(
+    dieta_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Eliminar una dieta del usuario autenticado"""
+    dieta = db.query(Dieta).filter(
+        Dieta.id == dieta_id,
+        Dieta.user_id == current_user.id
+    ).first()
     if not dieta:
         raise HTTPException(status_code=404, detail="Dieta no encontrada")
     
@@ -136,6 +159,7 @@ async def eliminar_dieta(dieta_id: int, db: Session = Depends(get_db)):
 @router.post("/generar", response_model=GenerarDietaResponse, status_code=201)
 async def generar_dieta_ia(
     request: GenerarDietaRequest,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     openai_service: OpenAIService = Depends(get_openai_service)
 ):
@@ -151,13 +175,8 @@ async def generar_dieta_ia(
     La dieta generada se guarda en la base de datos y se retorna con toda la información.
     """
     try:
-        # Verificar que el usuario existe
-        user = db.query(User).filter(User.id == request.user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
         # Generar la dieta con IA
-        logger.info(f"Generando dieta con IA para usuario {request.user_id}")
+        logger.info(f"Generando dieta con IA para usuario {current_user.id}")
         diet_plan = await openai_service.generar_dieta(
             objetivo_calorias=request.objetivo_calorias,
             preferencias=request.preferencias,
@@ -167,7 +186,7 @@ async def generar_dieta_ia(
         
         # Crear registro en la base de datos
         db_dieta = Dieta(
-            user_id=request.user_id,
+            user_id=current_user.id,
             nombre=diet_plan.get("nombre", f"Plan de {request.dias} días"),
             descripcion=diet_plan.get("descripcion", f"Plan personalizado de {request.objetivo_calorias} kcal/día")
         )

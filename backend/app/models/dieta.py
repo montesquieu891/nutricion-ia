@@ -15,11 +15,13 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False, unique=True, index=True)
+    hashed_password = Column(String(255), nullable=False)
     objetivo_calorias = Column(Integer)
     creado_en = Column(DateTime(timezone=True), server_default=func.now())
     
     dietas = relationship("Dieta", back_populates="user")
     recetas = relationship("Receta", back_populates="user")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class Dieta(Base):
@@ -55,3 +57,16 @@ class Receta(Base):
     creado_en = Column(DateTime(timezone=True), server_default=func.now())
     
     user = relationship("User", back_populates="recetas")
+
+
+class RefreshToken(Base):
+    """Refresh Token model for JWT authentication"""
+    __tablename__ = "refresh_tokens"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token = Column(String(500), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    user = relationship("User", back_populates="refresh_tokens")

@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     FATSECRET_CLIENT_ID: str = ""
     FATSECRET_CLIENT_SECRET: str = ""
     
+    # JWT Settings (configurable via .env)
+    JWT_SECRET_KEY: str = "your-secret-key-here-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    
     # Environment (configurable via .env)
     ENVIRONMENT: str = "development"
     
