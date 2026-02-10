@@ -14,7 +14,16 @@ logger = logging.getLogger(__name__)
 class OpenAIService:
     """Service for interacting with OpenAI API"""
     
+    # Configuration constants
+    DEFAULT_MODEL = "gpt-3.5-turbo"
+    DEFAULT_TEMPERATURE = 0.7
+    DIET_MAX_TOKENS = 2000
+    RECIPE_MAX_TOKENS = 1500
+    
     def __init__(self):
+        # Validate API key is configured
+        if not settings.OPENAI_API_KEY or settings.OPENAI_API_KEY == "":
+            raise ValueError("OPENAI_API_KEY no está configurado en las variables de entorno")
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     
     async def generar_dieta(
@@ -42,7 +51,7 @@ class OpenAIService:
         try:
             # Call OpenAI API
             response = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=self.DEFAULT_MODEL,
                 messages=[
                     {
                         "role": "system",
@@ -53,8 +62,8 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                temperature=0.7,
-                max_tokens=2000
+                temperature=self.DEFAULT_TEMPERATURE,
+                max_tokens=self.DIET_MAX_TOKENS
             )
             
             # Parse the response
@@ -102,7 +111,7 @@ class OpenAIService:
         try:
             # Call OpenAI API
             response = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=self.DEFAULT_MODEL,
                 messages=[
                     {
                         "role": "system",
@@ -113,8 +122,8 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                temperature=0.7,
-                max_tokens=1500
+                temperature=self.DEFAULT_TEMPERATURE,
+                max_tokens=self.RECIPE_MAX_TOKENS
             )
             
             # Parse the response

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.dieta import Dieta, User
 from app.services.openai_service import OpenAIService
-import json
+from app.services.dependencies import get_openai_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -136,7 +136,8 @@ async def eliminar_dieta(dieta_id: int, db: Session = Depends(get_db)):
 @router.post("/generar", response_model=GenerarDietaResponse, status_code=201)
 async def generar_dieta_ia(
     request: GenerarDietaRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    openai_service: OpenAIService = Depends(get_openai_service)
 ):
     """
     Generar una dieta personalizada usando IA (OpenAI)
@@ -154,9 +155,6 @@ async def generar_dieta_ia(
         user = db.query(User).filter(User.id == request.user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
-        # Crear instancia del servicio OpenAI
-        openai_service = OpenAIService()
         
         # Generar la dieta con IA
         logger.info(f"Generando dieta con IA para usuario {request.user_id}")
