@@ -25,6 +25,8 @@ if is_sqlite:
     )
 else:
     # PostgreSQL and other databases configuration
+    # Note: connect_args with 'options' parameter is PostgreSQL-specific
+    # For other databases (MySQL, etc.), adjust connect_args accordingly
     engine = create_engine(
         settings.DATABASE_URL,
         poolclass=QueuePool,
@@ -36,7 +38,7 @@ else:
         echo=False,                     # Set to True for SQL query logging in development
         connect_args={
             "connect_timeout": 10,       # Connection timeout in seconds
-            "options": "-c timezone=utc" # Set timezone to UTC for all connections
+            "options": "-c timezone=utc" # Set timezone to UTC for all connections (PostgreSQL-specific)
         }
     )
 
