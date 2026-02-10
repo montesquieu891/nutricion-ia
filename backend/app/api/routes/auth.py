@@ -2,7 +2,7 @@
 Authentication routes - Register, Login, Refresh, Logout
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from jose import JWTError
@@ -22,7 +22,8 @@ from app.services.auth_service import (
     verify_password,
     create_access_token,
     create_refresh_token,
-    decode_token
+    decode_token,
+    get_refresh_token_expiration
 )
 from app.config import settings
 
@@ -65,11 +66,10 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     refresh_token_str = create_refresh_token(new_user.id)
     
     # Store refresh token in database
-    refresh_token_expires = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     refresh_token_db = RefreshToken(
         user_id=new_user.id,
         token=refresh_token_str,
-        expires_at=refresh_token_expires
+        expires_at=get_refresh_token_expiration()
     )
     db.add(refresh_token_db)
     db.commit()
@@ -106,11 +106,10 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     refresh_token_str = create_refresh_token(user.id)
     
     # Store refresh token in database
-    refresh_token_expires = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     refresh_token_db = RefreshToken(
         user_id=user.id,
         token=refresh_token_str,
-        expires_at=refresh_token_expires
+        expires_at=get_refresh_token_expiration()
     )
     db.add(refresh_token_db)
     db.commit()
@@ -155,7 +154,7 @@ async def refresh(token_request: RefreshTokenRequest, db: Session = Depends(get_
             raise credentials_exception
         
         # Check if token is expired
-        if refresh_token_db.expires_at < datetime.utcnow():
+        if refresh_token_db.expires_at < datetime.now(timezone.utc):
             # Delete expired token
             db.delete(refresh_token_db)
             db.commit()
