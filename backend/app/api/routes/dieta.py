@@ -40,7 +40,7 @@ async def listar_dietas():
 async def crear_dieta(dieta: DietaCreate):
     """Crear una nueva dieta"""
     # TODO: Implementar lógica de base de datos
-    return Dieta(id=1, **dieta.dict())
+    return Dieta(id=1, **dieta.model_dump())
 
 
 @router.get("/{dieta_id}", response_model=Dieta)

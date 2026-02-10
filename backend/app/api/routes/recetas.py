@@ -43,7 +43,7 @@ async def listar_recetas(skip: int = 0, limit: int = 10):
 async def crear_receta(receta: RecetaCreate):
     """Crear una nueva receta"""
     # TODO: Implementar lógica de base de datos
-    return Receta(id=1, **receta.dict())
+    return Receta(id=1, **receta.model_dump())
 
 
 @router.get("/{receta_id}", response_model=Receta)

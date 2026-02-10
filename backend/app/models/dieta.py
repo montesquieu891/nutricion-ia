@@ -2,7 +2,7 @@
 Database models for the application
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Float
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float, JSON
 from sqlalchemy.sql import func
 from app.db.session import Base
 
@@ -26,7 +26,7 @@ class Receta(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(255), nullable=False)
     descripcion = Column(Text)
-    ingredientes = Column(Text)  # Stored as JSON string
+    ingredientes = Column(JSON)  # Native JSON type for better querying
     instrucciones = Column(Text)
     tiempo_preparacion = Column(Integer)  # en minutos
     calorias = Column(Integer)
