@@ -3,11 +3,16 @@ Rutas para gestión de dietas
 """
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Optional
-from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models.dieta import Dieta
+from app.models.dieta import Dieta, User
+from app.services.openai_service import OpenAIService
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -38,6 +43,28 @@ class DietaResponse(DietaBase):
     
     class Config:
         from_attributes = True
+
+
+class GenerarDietaRequest(BaseModel):
+    """Modelo para solicitud de generación de dieta con IA"""
+    user_id: int = Field(..., description="ID del usuario")
+    objetivo_calorias: int = Field(..., gt=0, description="Objetivo de calorías diarias")
+    preferencias: Optional[List[str]] = Field(None, description="Preferencias alimenticias")
+    restricciones: Optional[List[str]] = Field(None, description="Restricciones dietéticas")
+    dias: int = Field(7, gt=0, le=30, description="Número de días del plan (1-30)")
+
+
+class GenerarDietaResponse(BaseModel):
+    """Modelo de respuesta para dieta generada con IA"""
+    id: int
+    user_id: int
+    nombre: str
+    descripcion: str
+    plan_completo: Dict[str, Any] = Field(..., description="Plan de dieta completo con comidas")
+    calorias_totales: Optional[int] = None
+    proteina_total: Optional[float] = None
+    carbohidratos_total: Optional[float] = None
+    grasas_total: Optional[float] = None
 
 
 @router.get("/", response_model=List[DietaResponse])
@@ -106,8 +133,73 @@ async def eliminar_dieta(dieta_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
-@router.post("/generar")
-async def generar_dieta_ia(parametros: dict):
-    """Generar una dieta usando IA"""
-    # TODO: Implementar lógica con OpenAI
-    return {"message": "Función de generación de dieta con IA pendiente"}
+@router.post("/generar", response_model=GenerarDietaResponse, status_code=201)
+async def generar_dieta_ia(
+    request: GenerarDietaRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Generar una dieta personalizada usando IA (OpenAI)
+    
+    Este endpoint genera un plan de dieta completo basado en:
+    - Objetivo de calorías diarias del usuario
+    - Preferencias alimenticias (opcional)
+    - Restricciones dietéticas (opcional)
+    - Número de días del plan
+    
+    La dieta generada se guarda en la base de datos y se retorna con toda la información.
+    """
+    try:
+        # Verificar que el usuario existe
+        user = db.query(User).filter(User.id == request.user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        # Crear instancia del servicio OpenAI
+        openai_service = OpenAIService()
+        
+        # Generar la dieta con IA
+        logger.info(f"Generando dieta con IA para usuario {request.user_id}")
+        diet_plan = await openai_service.generar_dieta(
+            objetivo_calorias=request.objetivo_calorias,
+            preferencias=request.preferencias,
+            restricciones=request.restricciones,
+            dias=request.dias
+        )
+        
+        # Crear registro en la base de datos
+        db_dieta = Dieta(
+            user_id=request.user_id,
+            nombre=diet_plan.get("nombre", f"Plan de {request.dias} días"),
+            descripcion=diet_plan.get("descripcion", f"Plan personalizado de {request.objetivo_calorias} kcal/día")
+        )
+        db.add(db_dieta)
+        db.commit()
+        db.refresh(db_dieta)
+        
+        logger.info(f"Dieta generada exitosamente con ID: {db_dieta.id}")
+        
+        # Preparar respuesta
+        return GenerarDietaResponse(
+            id=db_dieta.id,
+            user_id=db_dieta.user_id,
+            nombre=db_dieta.nombre,
+            descripcion=db_dieta.descripcion,
+            plan_completo=diet_plan,
+            calorias_totales=diet_plan.get("calorias_totales"),
+            proteina_total=diet_plan.get("proteina_total"),
+            carbohidratos_total=diet_plan.get("carbohidratos_total"),
+            grasas_total=diet_plan.get("grasas_total")
+        )
+    
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.error(f"Error de validación: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generando dieta con IA: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al generar dieta con IA: {str(e)}"
+        )
