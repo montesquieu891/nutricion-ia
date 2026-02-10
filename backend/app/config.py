@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
     
     # Database Settings (configurable via .env)
-    DATABASE_URL: str = "postgresql://user:password@db:5432/nutricion_ia"
+    # Default: SQLite for local development (included with Python, no installation needed)
+    # For production: Use PostgreSQL (e.g., postgresql://user:password@host:5432/db_name)
+    DATABASE_URL: str = "sqlite:///./nutricion.db"
     
     # OpenAI Settings (configurable via .env)
     OPENAI_API_KEY: str = ""

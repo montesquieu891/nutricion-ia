@@ -7,7 +7,7 @@ Aplicación de gestión de dietas y recetas con inteligencia artificial.
 - **Backend con FastAPI**: API REST robusta y rápida
 - **Frontend con Next.js**: Interfaz moderna y responsive
 - **Inteligencia Artificial**: Generación de dietas y recetas personalizadas
-- **Base de datos PostgreSQL**: Almacenamiento persistente
+- **Base de datos SQLite/PostgreSQL**: SQLite para desarrollo local (sin configuración adicional), PostgreSQL para producción
 - **Dockerizado**: Fácil despliegue y desarrollo
 
 ## 📋 Requisitos Previos
@@ -38,6 +38,10 @@ cp frontend/.env.example frontend/.env
 Editar `backend/.env` y configurar las credenciales de las APIs:
 - **OpenAI API**: Obtener clave en https://platform.openai.com/api-keys
 - **FatSecret API**: Registrarse en https://platform.fatsecret.com/api/ y crear una aplicación para obtener `FATSECRET_CLIENT_ID` y `FATSECRET_CLIENT_SECRET`
+
+**Nota sobre la base de datos:**
+- Por defecto, la aplicación usa **SQLite** (`sqlite:///./nutricion.db`) que no requiere instalación adicional
+- Para usar **PostgreSQL** en producción, descomentar la línea correspondiente en `backend/.env` y instalar `psycopg2-binary`
 
 3. Iniciar los servicios (el script necesita permisos de ejecución):
 ```bash
@@ -102,7 +106,7 @@ nutricion-ia/
 ### Backend
 - FastAPI 0.115.6
 - SQLAlchemy 2.0
-- PostgreSQL 15
+- SQLite (desarrollo) / PostgreSQL (producción)
 - OpenAI API
 - Pydantic v2
 - Python-multipart 0.0.22
