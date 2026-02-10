@@ -2,9 +2,12 @@
 Rutas para gestión de recetas
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from app.db.session import get_db
+from app.models.dieta import Receta
 
 router = APIRouter()
 
@@ -12,45 +15,111 @@ router = APIRouter()
 class RecetaBase(BaseModel):
     """Modelo base para receta"""
     nombre: str
-    descripcion: str
-    ingredientes: List[str]
-    instrucciones: str
-    tiempo_preparacion: int  # en minutos
-    calorias: int
+    descripcion: Optional[str] = None
+    ingredientes: Optional[dict] = None
+    instrucciones: Optional[str] = None
+    calorias: Optional[int] = None
+    proteina: Optional[float] = None
+    carbohidratos: Optional[float] = None
+    grasas: Optional[float] = None
 
 
 class RecetaCreate(RecetaBase):
     """Modelo para crear receta"""
-    pass
+    user_id: int
 
 
-class Receta(RecetaBase):
+class RecetaUpdate(BaseModel):
+    """Modelo para actualizar receta"""
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    ingredientes: Optional[dict] = None
+    instrucciones: Optional[str] = None
+    calorias: Optional[int] = None
+    proteina: Optional[float] = None
+    carbohidratos: Optional[float] = None
+    grasas: Optional[float] = None
+
+
+class RecetaResponse(RecetaBase):
     """Modelo de receta completo"""
     id: int
+    user_id: int
     
     class Config:
         from_attributes = True
 
 
-@router.get("/", response_model=List[Receta])
-async def listar_recetas(skip: int = 0, limit: int = 10):
+@router.get("/", response_model=List[RecetaResponse])
+async def listar_recetas(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
     """Listar todas las recetas"""
-    # TODO: Implementar lógica de base de datos
-    return []
+    recetas = db.query(Receta).offset(skip).limit(limit).all()
+    return recetas
 
 
-@router.post("/", response_model=Receta)
-async def crear_receta(receta: RecetaCreate):
+@router.post("/", response_model=RecetaResponse, status_code=201)
+async def crear_receta(receta: RecetaCreate, db: Session = Depends(get_db)):
     """Crear una nueva receta"""
-    # TODO: Implementar lógica de base de datos
-    return Receta(id=1, **receta.model_dump())
+    db_receta = Receta(
+        user_id=receta.user_id,
+        nombre=receta.nombre,
+        descripcion=receta.descripcion,
+        ingredientes=receta.ingredientes,
+        instrucciones=receta.instrucciones,
+        calorias=receta.calorias,
+        proteina=receta.proteina,
+        carbohidratos=receta.carbohidratos,
+        grasas=receta.grasas
+    )
+    db.add(db_receta)
+    db.commit()
+    db.refresh(db_receta)
+    return db_receta
 
 
-@router.get("/{receta_id}", response_model=Receta)
-async def obtener_receta(receta_id: int):
+@router.get("/{receta_id}", response_model=RecetaResponse)
+async def obtener_receta(receta_id: int, db: Session = Depends(get_db)):
     """Obtener una receta específica"""
-    # TODO: Implementar lógica de base de datos
-    raise HTTPException(status_code=404, detail="Receta no encontrada")
+    receta = db.query(Receta).filter(Receta.id == receta_id).first()
+    if not receta:
+        raise HTTPException(status_code=404, detail="Receta no encontrada")
+    return receta
+
+
+@router.put("/{receta_id}", response_model=RecetaResponse)
+async def actualizar_receta(
+    receta_id: int,
+    receta_update: RecetaUpdate,
+    db: Session = Depends(get_db)
+):
+    """Actualizar una receta existente"""
+    receta = db.query(Receta).filter(Receta.id == receta_id).first()
+    if not receta:
+        raise HTTPException(status_code=404, detail="Receta no encontrada")
+    
+    update_data = receta_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(receta, field, value)
+    
+    db.commit()
+    db.refresh(receta)
+    return receta
+
+
+@router.delete("/{receta_id}", status_code=204)
+async def eliminar_receta(receta_id: int, db: Session = Depends(get_db)):
+    """Eliminar una receta"""
+    receta = db.query(Receta).filter(Receta.id == receta_id).first()
+    if not receta:
+        raise HTTPException(status_code=404, detail="Receta no encontrada")
+    
+    db.delete(receta)
+    db.commit()
+    return None
 
 
 @router.post("/buscar")
