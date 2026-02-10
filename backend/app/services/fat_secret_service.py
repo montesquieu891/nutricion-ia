@@ -342,13 +342,13 @@ class FatSecretService:
             if cal_match:
                 macros["calorias"] = float(cal_match.group(1))
             
-            # Extract protein - look for number after "protein:"
-            protein_match = re.search(r'protein[a]?:\s*(\d+\.?\d*)', description, re.IGNORECASE)
+            # Extract protein - look for number after "protein:" or "proteina:"
+            protein_match = re.search(r'proteina?:\s*(\d+\.?\d*)', description, re.IGNORECASE)
             if protein_match:
                 macros["proteina"] = float(protein_match.group(1))
             
-            # Extract carbs - look for number after "carb" or "carbohidrato"
-            carb_match = re.search(r'carb[s|ohidrato]*:\s*(\d+\.?\d*)', description, re.IGNORECASE)
+            # Extract carbs - look for number after "carb", "carbs", or "carbohidrato"
+            carb_match = re.search(r'carb(?:s|ohidratos?)?:\s*(\d+\.?\d*)', description, re.IGNORECASE)
             if carb_match:
                 macros["carbohidratos"] = float(carb_match.group(1))
             
