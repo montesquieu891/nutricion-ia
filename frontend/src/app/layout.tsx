@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import '../styles/globals.css';
+import { AuthProvider } from '@/context/AuthContext';
+import { ThemeProvider } from '@/providers/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'Nutricion IA',
@@ -12,7 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
