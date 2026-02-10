@@ -2,6 +2,8 @@
 
 Esta guía te ayudará a configurar y ejecutar la aplicación Nutrición IA en tu máquina local.
 
+> 💡 **Guía Rápida**: Si solo necesitas saber cómo iniciar el frontend y backend en terminales separadas, consulta [INICIAR-DESARROLLO.md](./INICIAR-DESARROLLO.md)
+
 ## ✅ Estado del Proyecto
 
 El proyecto está **OPERATIVO** y listo para usar con las siguientes características:

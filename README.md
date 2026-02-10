@@ -17,6 +17,8 @@ Aplicación de gestión de dietas y recetas con inteligencia artificial.
 
 **¿Primera vez?** Lee la [**Guía de Configuración Completa (SETUP.md)**](./SETUP.md) 📖
 
+**¿Desarrollo Local?** Lee [**Guía para Iniciar en Terminales Separadas (INICIAR-DESARROLLO.md)**](./INICIAR-DESARROLLO.md) 🔧
+
 ### Opción 1: Con Docker (Recomendado)
 
 ```bash
