@@ -35,6 +35,10 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
+Editar `backend/.env` y configurar las credenciales de las APIs:
+- **OpenAI API**: Obtener clave en https://platform.openai.com/api-keys
+- **FatSecret API**: Registrarse en https://platform.fatsecret.com/api/ y crear una aplicación para obtener `FATSECRET_CLIENT_ID` y `FATSECRET_CLIENT_SECRET`
+
 3. Iniciar los servicios (el script necesita permisos de ejecución):
 ```bash
 chmod +x start.sh
@@ -114,6 +118,21 @@ nutricion-ia/
 Una vez iniciado el backend, la documentación interactiva está disponible en:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+### Probar la búsqueda de alimentos con FatSecret API
+
+Una vez configuradas las credenciales de FatSecret en el archivo `.env`, puedes probar el endpoint de búsqueda de alimentos:
+
+```bash
+# Buscar alimentos (ejemplo: pollo)
+curl "http://localhost:8000/api/v1/alimentos/buscar?nombre=pollo"
+
+# Buscar otros alimentos
+curl "http://localhost:8000/api/v1/alimentos/buscar?nombre=arroz"
+curl "http://localhost:8000/api/v1/alimentos/buscar?nombre=manzana"
+```
+
+También puedes probar el endpoint desde la interfaz Swagger UI en http://localhost:8000/docs, navegando a la sección "alimentos" y usando el endpoint GET `/api/v1/alimentos/buscar`.
 
 ## 🤝 Contribución
 

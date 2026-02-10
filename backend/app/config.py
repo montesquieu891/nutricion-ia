@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # OpenAI Settings
     OPENAI_API_KEY: str = ""
     
+    # FatSecret API Settings
+    FATSECRET_CLIENT_ID: str = ""
+    FATSECRET_CLIENT_SECRET: str = ""
+    
     # Environment
     ENVIRONMENT: str = "development"
     

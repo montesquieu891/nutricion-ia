@@ -5,7 +5,7 @@ Main entry point for the API
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import dieta, recetas
+from app.api.routes import dieta, recetas, alimentos
 from app.config import settings
 
 app = FastAPI(
@@ -26,6 +26,7 @@ app.add_middleware(
 # Include routers
 app.include_router(dieta.router, prefix="/api/v1/dieta", tags=["dieta"])
 app.include_router(recetas.router, prefix="/api/v1/recetas", tags=["recetas"])
+app.include_router(alimentos.router, prefix="/api/v1/alimentos", tags=["alimentos"])
 
 
 @app.get("/")
