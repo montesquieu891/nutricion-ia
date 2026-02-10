@@ -51,7 +51,7 @@ else
 fi
 
 # Run migrations
-echo "🗄️  Ejecutando migraciones de base de datos..."
+echo "🗄️ Ejecutando migraciones de base de datos..."
 alembic upgrade head
 
 echo ""
