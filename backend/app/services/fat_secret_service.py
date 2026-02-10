@@ -334,36 +334,28 @@ class FatSecretService:
         }
         
         try:
-            # Split by pipe separator and process each nutrient
-            parts = description.split("|")
+            # Use more specific regex patterns to avoid matching numbers before colons
+            # Look for patterns like "Calories: 165" or "Calories: 165.5kcal"
             
-            for part in parts:
-                part = part.strip().lower()
-                
-                # Extract calories
-                if "calories" in part or "kcal" in part:
-                    # Extract number (integer or float) from string like "Calories: 165" or "Calories: 165.5"
-                    match = re.search(r'(\d+\.?\d*)', part)
-                    if match:
-                        macros["calorias"] = float(match.group(1))
-                
-                # Extract protein
-                elif "protein" in part or "proteina" in part:
-                    match = re.search(r'(\d+\.?\d*)', part)
-                    if match:
-                        macros["proteina"] = float(match.group(1))
-                
-                # Extract carbs
-                elif "carb" in part or "carbohidrato" in part:
-                    match = re.search(r'(\d+\.?\d*)', part)
-                    if match:
-                        macros["carbohidratos"] = float(match.group(1))
-                
-                # Extract fat
-                elif "fat" in part or "grasa" in part:
-                    match = re.search(r'(\d+\.?\d*)', part)
-                    if match:
-                        macros["grasas"] = float(match.group(1))
+            # Extract calories - look for number after "calories:" or "kcal:"
+            cal_match = re.search(r'calories?:\s*(\d+\.?\d*)', description, re.IGNORECASE)
+            if cal_match:
+                macros["calorias"] = float(cal_match.group(1))
+            
+            # Extract protein - look for number after "protein:"
+            protein_match = re.search(r'protein[a]?:\s*(\d+\.?\d*)', description, re.IGNORECASE)
+            if protein_match:
+                macros["proteina"] = float(protein_match.group(1))
+            
+            # Extract carbs - look for number after "carb" or "carbohidrato"
+            carb_match = re.search(r'carb[s|ohidrato]*:\s*(\d+\.?\d*)', description, re.IGNORECASE)
+            if carb_match:
+                macros["carbohidratos"] = float(carb_match.group(1))
+            
+            # Extract fat - look for number after "fat:" or "grasa:"
+            fat_match = re.search(r'(?:fat|grasa)[s]?:\s*(\d+\.?\d*)', description, re.IGNORECASE)
+            if fat_match:
+                macros["grasas"] = float(fat_match.group(1))
         
         except Exception as e:
             # If parsing fails, log and return empty macros
