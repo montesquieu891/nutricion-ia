@@ -96,14 +96,15 @@ nutricion-ia/
 ## 🛠️ Tecnologías
 
 ### Backend
-- FastAPI 0.109.0
+- FastAPI 0.115.6
 - SQLAlchemy 2.0
 - PostgreSQL 15
 - OpenAI API
-- Pydantic
+- Pydantic v2
+- Python-multipart 0.0.22
 
 ### Frontend
-- Next.js 14
+- Next.js 15.2.9
 - React 18
 - TypeScript
 - Axios
