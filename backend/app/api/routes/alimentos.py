@@ -2,12 +2,14 @@
 Rutas para gestión de alimentos y búsqueda con FatSecret API
 """
 
+import logging
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.services.fat_secret_service import FatSecretService
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class AlimentoResponse(BaseModel):
@@ -17,10 +19,10 @@ class AlimentoResponse(BaseModel):
     descripcion: str
     tipo: str
     url: str
-    calorias: float | None = None
-    proteina: float | None = None
-    carbohidratos: float | None = None
-    grasas: float | None = None
+    calorias: float | None = Field(None, description="Calorías por porción")
+    proteina: float | None = Field(None, description="Proteína en gramos por porción")
+    carbohidratos: float | None = Field(None, description="Carbohidratos en gramos por porción")
+    grasas: float | None = Field(None, description="Grasas en gramos por porción")
 
 
 @router.get("/buscar", response_model=List[AlimentoResponse])
@@ -39,6 +41,7 @@ async def buscar_alimentos(
     Raises:
         HTTPException: Si hay error en la comunicación con FatSecret API
     """
+    fat_secret_service = None
     try:
         # Crear instancia del servicio FatSecret
         fat_secret_service = FatSecretService()
@@ -54,8 +57,12 @@ async def buscar_alimentos(
     
     except Exception as e:
         # Log the error for debugging
-        print(f"Error buscando alimentos: {str(e)}")
+        logger.error(f"Error buscando alimentos: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error al buscar alimentos en FatSecret API: {str(e)}"
         )
+    finally:
+        # Clean up the HTTP client
+        if fat_secret_service:
+            await fat_secret_service.close()

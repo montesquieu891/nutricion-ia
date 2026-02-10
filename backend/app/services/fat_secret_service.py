@@ -5,8 +5,12 @@ Handles OAuth2 authentication and food search functionality
 
 import base64
 import httpx
+import logging
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class FatSecretService:
@@ -20,6 +24,20 @@ class FatSecretService:
         self.client_id = settings.FATSECRET_CLIENT_ID
         self.client_secret = settings.FATSECRET_CLIENT_SECRET
         self.access_token: Optional[str] = None
+        self.token_expiry: Optional[datetime] = None
+        self._http_client: Optional[httpx.AsyncClient] = None
+    
+    async def _get_http_client(self) -> httpx.AsyncClient:
+        """Get or create the HTTP client instance"""
+        if self._http_client is None or self._http_client.is_closed:
+            self._http_client = httpx.AsyncClient(timeout=30.0)
+        return self._http_client
+    
+    async def close(self):
+        """Close the HTTP client connection"""
+        if self._http_client is not None:
+            await self._http_client.aclose()
+            self._http_client = None
     
     async def _get_access_token(self) -> str:
         """
@@ -40,19 +58,30 @@ class FatSecretService:
             "scope": "basic"
         }
         
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self.TOKEN_URL,
-                headers=headers,
-                data=data
-            )
-            response.raise_for_status()
-            token_data = response.json()
-            return token_data["access_token"]
+        client = await self._get_http_client()
+        response = await client.post(
+            self.TOKEN_URL,
+            headers=headers,
+            data=data
+        )
+        response.raise_for_status()
+        token_data = response.json()
+        
+        # Store token and expiry time (subtract 60 seconds for safety margin)
+        expires_in = token_data.get("expires_in", 3600)
+        self.token_expiry = datetime.now() + timedelta(seconds=expires_in - 60)
+        
+        return token_data["access_token"]
+    
+    def _is_token_expired(self) -> bool:
+        """Check if the current token is expired or about to expire"""
+        if not self.access_token or not self.token_expiry:
+            return True
+        return datetime.now() >= self.token_expiry
     
     async def _ensure_authenticated(self):
         """Ensure we have a valid access token"""
-        if not self.access_token:
+        if self._is_token_expired():
             self.access_token = await self._get_access_token()
     
     async def search_foods(self, search_query: str, max_results: int = 20) -> List[Dict[str, Any]]:
@@ -80,17 +109,17 @@ class FatSecretService:
             "max_results": max_results
         }
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                self.API_BASE_URL,
-                headers=headers,
-                params=params
-            )
-            response.raise_for_status()
-            data = response.json()
-            
-            # Parse and format the response
-            return self._format_search_results(data)
+        client = await self._get_http_client()
+        response = await client.get(
+            self.API_BASE_URL,
+            headers=headers,
+            params=params
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        # Parse and format the response
+        return self._format_search_results(data)
     
     def _format_search_results(self, api_response: Dict) -> List[Dict[str, Any]]:
         """
@@ -148,6 +177,8 @@ class FatSecretService:
         Returns:
             Dictionary with parsed macro values
         """
+        import re
+        
         macros = {
             "calorias": None,
             "proteina": None,
@@ -164,37 +195,31 @@ class FatSecretService:
                 
                 # Extract calories
                 if "calories" in part or "kcal" in part:
-                    # Extract number from string like "Calories: 165"
-                    value = ''.join(filter(str.isdigit, part.split(':')[-1] if ':' in part else part))
-                    if value:
-                        macros["calorias"] = float(value)
+                    # Extract number (integer or float) from string like "Calories: 165" or "Calories: 165.5"
+                    match = re.search(r'(\d+\.?\d*)', part)
+                    if match:
+                        macros["calorias"] = float(match.group(1))
                 
                 # Extract protein
                 elif "protein" in part or "proteina" in part:
-                    value = part.split(':')[-1].strip().replace('g', '').strip()
-                    try:
-                        macros["proteina"] = float(value)
-                    except (ValueError, AttributeError):
-                        pass
+                    match = re.search(r'(\d+\.?\d*)', part)
+                    if match:
+                        macros["proteina"] = float(match.group(1))
                 
                 # Extract carbs
                 elif "carb" in part or "carbohidrato" in part:
-                    value = part.split(':')[-1].strip().replace('g', '').strip()
-                    try:
-                        macros["carbohidratos"] = float(value)
-                    except (ValueError, AttributeError):
-                        pass
+                    match = re.search(r'(\d+\.?\d*)', part)
+                    if match:
+                        macros["carbohidratos"] = float(match.group(1))
                 
                 # Extract fat
                 elif "fat" in part or "grasa" in part:
-                    value = part.split(':')[-1].strip().replace('g', '').strip()
-                    try:
-                        macros["grasas"] = float(value)
-                    except (ValueError, AttributeError):
-                        pass
+                    match = re.search(r'(\d+\.?\d*)', part)
+                    if match:
+                        macros["grasas"] = float(match.group(1))
         
-        except Exception:
-            # If parsing fails, return empty macros
-            pass
+        except Exception as e:
+            # If parsing fails, log and return empty macros
+            logger.warning(f"Failed to parse macros from description: {e}")
         
         return macros
