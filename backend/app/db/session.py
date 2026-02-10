@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Determine if we're using SQLite or another database
-is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+is_sqlite = settings.DATABASE_URL.lower().startswith("sqlite")
 
 # Configure engine based on database type
 if is_sqlite:
