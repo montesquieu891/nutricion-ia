@@ -1,12 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ReactNode;
+  children?: { name: string; href: string; }[];
 }
 
 const navigation = [
@@ -27,6 +34,11 @@ const navigation = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
     ),
+    children: [
+      { name: 'Ver Todas', href: '/dashboard/dietas' },
+      { name: 'Nueva Dieta', href: '/dashboard/dietas/new' },
+      { name: 'Generar con IA', href: '/dashboard/dietas/generar' },
+    ],
   },
   {
     name: 'Recetas',
@@ -36,6 +48,11 @@ const navigation = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
     ),
+    children: [
+      { name: 'Ver Todas', href: '/dashboard/recetas' },
+      { name: 'Nueva Receta', href: '/dashboard/recetas/new' },
+      { name: 'Generar con IA', href: '/dashboard/recetas/generar' },
+    ],
   },
   {
     name: 'Alimentos',
@@ -43,15 +60,6 @@ const navigation = [
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    ),
-  },
-  {
-    name: 'Generar con IA',
-    href: '/dashboard/generar',
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
   },
@@ -68,6 +76,15 @@ const navigation = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+
+  const toggleSection = (name: string) => {
+    if (expandedSections.includes(name)) {
+      setExpandedSections(expandedSections.filter(s => s !== name));
+    } else {
+      setExpandedSections([...expandedSections, name]);
+    }
+  };
   
   return (
     <>
@@ -109,24 +126,78 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
             {navigation.map((item) => {
               const isActive = pathname === item.href || (pathname?.startsWith(item.href + '/') ?? false);
+              const isExpanded = expandedSections.includes(item.name);
+              const hasChildren = item.children && item.children.length > 0;
               
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => onClose()}
-                  className={`
-                    flex items-center px-4 py-3 rounded-lg transition-smooth
-                    ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                        : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                    }
-                  `}
-                >
-                  <span className="mr-3">{item.icon}</span>
-                  <span className="font-medium">{item.name}</span>
-                </Link>
+                <div key={item.name}>
+                  {hasChildren ? (
+                    <>
+                      <button
+                        onClick={() => toggleSection(item.name)}
+                        className={`
+                          w-full flex items-center justify-between px-4 py-3 rounded-lg transition-smooth
+                          ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                          }
+                        `}
+                      >
+                        <div className="flex items-center">
+                          <span className="mr-3">{item.icon}</span>
+                          <span className="font-medium">{item.name}</span>
+                        </div>
+                        <svg
+                          className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="ml-4 mt-1 space-y-1">
+                          {item.children?.map((child) => (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              onClick={() => onClose()}
+                              className={`
+                                block px-4 py-2 rounded-lg text-sm transition-smooth
+                                ${
+                                  pathname === child.href
+                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+                                }
+                              `}
+                            >
+                              {child.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      onClick={() => onClose()}
+                      className={`
+                        flex items-center px-4 py-3 rounded-lg transition-smooth
+                        ${
+                          isActive
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                        }
+                      `}
+                    >
+                      <span className="mr-3">{item.icon}</span>
+                      <span className="font-medium">{item.name}</span>
+                    </Link>
+                  )}
+                </div>
               );
             })}
           </nav>
