@@ -73,12 +73,22 @@ export interface GenerarDietaResponse {
 }
 
 // Receta Types
+export interface Ingrediente {
+  nombre: string;
+  cantidad: number;
+  unidad: string;
+  calorias?: number;
+  proteina?: number;
+  carbohidratos?: number;
+  grasas?: number;
+}
+
 export interface Receta {
   id: number;
   user_id: number;
   nombre: string;
   descripcion?: string | null;
-  ingredientes?: Record<string, any> | null;
+  ingredientes?: Ingrediente[] | null;
   instrucciones?: string | null;
   calorias?: number | null;
   proteina?: number | null;
@@ -91,7 +101,7 @@ export interface Receta {
 export interface RecetaCreate {
   nombre: string;
   descripcion?: string;
-  ingredientes?: Record<string, any>;
+  ingredientes?: Ingrediente[];
   instrucciones?: string;
   calorias?: number;
   proteina?: number;
@@ -102,7 +112,7 @@ export interface RecetaCreate {
 export interface RecetaUpdate {
   nombre?: string;
   descripcion?: string;
-  ingredientes?: Record<string, any>;
+  ingredientes?: Ingrediente[];
   instrucciones?: string;
   calorias?: number;
   proteina?: number;
