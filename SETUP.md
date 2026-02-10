@@ -90,10 +90,48 @@ docker-compose up -d
 
 ### 4. Iniciar en Modo Desarrollo Local
 
-#### Backend
+Tienes dos opciones para ejecutar la aplicación localmente: usar los scripts de inicio o ejecutar manualmente.
+
+#### Opción A: Con Scripts de Inicio (Recomendado)
+
+Abre **dos terminales separadas** en el directorio raíz del proyecto:
+
+**Terminal 1 - Backend:**
+```bash
+./start-backend.sh
+```
+
+Este script automáticamente:
+- ✅ Crea el entorno virtual de Python si no existe
+- ✅ Instala todas las dependencias del backend
+- ✅ Crea el archivo `.env` desde `.env.example` si no existe
+- ✅ Ejecuta las migraciones de la base de datos
+- ✅ Inicia el servidor FastAPI en http://localhost:8000
+
+**Terminal 2 - Frontend:**
+```bash
+./start-frontend.sh
+```
+
+Este script automáticamente:
+- ✅ Instala todas las dependencias del frontend
+- ✅ Crea el archivo `.env.local` desde `.env.example` si no existe
+- ✅ Inicia el servidor Next.js en http://localhost:3000
+
+#### Opción B: Manual (Control Total)
+
+##### Backend
+
+En una terminal, ejecuta:
 
 ```bash
 cd backend
+
+# Crear entorno virtual
+python3 -m venv venv
+
+# Activar entorno virtual
+source venv/bin/activate  # En Windows: venv\Scripts\activate
 
 # Instalar dependencias
 pip install -r requirements.txt
@@ -105,7 +143,9 @@ alembic upgrade head
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-#### Frontend
+##### Frontend
+
+En otra terminal, ejecuta:
 
 ```bash
 cd frontend
@@ -115,6 +155,20 @@ npm install
 
 # Iniciar servidor de desarrollo
 npm run dev
+```
+
+#### Opción C: Con Make (Alternativa)
+
+Si prefieres usar Make, abre dos terminales:
+
+**Terminal 1:**
+```bash
+make dev-backend
+```
+
+**Terminal 2:**
+```bash
+make dev-frontend
 ```
 
 ## 🌐 Acceder a la Aplicación
@@ -333,6 +387,17 @@ DATABASE_URL=postgresql://user:password@db:5432/nutricion_ia
 Verifica que `NEXT_PUBLIC_API_URL` en `frontend/.env.local` apunte al backend correcto:
 - Desarrollo local: `http://localhost:8000`
 - Con Docker: `http://backend:8000` (dentro del contenedor)
+
+### Los scripts de inicio no funcionan
+
+Si los scripts `start-backend.sh` o `start-frontend.sh` no funcionan:
+
+1. Verifica que sean ejecutables:
+```bash
+chmod +x start-backend.sh start-frontend.sh
+```
+
+2. En Windows, usa Git Bash o WSL para ejecutar los scripts, o ejecuta los comandos manualmente.
 
 ## 📊 Verificar que Todo Funciona
 

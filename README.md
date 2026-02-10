@@ -31,11 +31,41 @@ Accede a: http://localhost:3000 🎉
 
 ### Opción 2: Desarrollo Local
 
-```bash
-# Configuración automática
-./quickstart.sh
+#### Método Rápido: Scripts de Inicio
 
-# Luego inicia backend y frontend en terminales separadas
+Abre **dos terminales separadas** y ejecuta:
+
+**Terminal 1 - Backend:**
+```bash
+./start-backend.sh
+```
+
+**Terminal 2 - Frontend:**
+```bash
+./start-frontend.sh
+```
+
+Los scripts instalarán dependencias automáticamente la primera vez.
+
+#### Método Manual
+
+Si prefieres control total, sigue estos pasos:
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # En Windows: venv\Scripts\activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ## 🚀 Características
