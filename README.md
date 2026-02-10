@@ -17,6 +17,8 @@ Aplicación de gestión de dietas y recetas con inteligencia artificial.
 
 **¿Primera vez?** Lee la [**Guía de Configuración Completa (SETUP.md)**](./SETUP.md) 📖
 
+**¿Desarrollo Local?** Lee [**Guía para Iniciar en Terminales Separadas (INICIAR-DESARROLLO.md)**](./INICIAR-DESARROLLO.md) 🔧
+
 ### Opción 1: Con Docker (Recomendado)
 
 ```bash
@@ -31,11 +33,41 @@ Accede a: http://localhost:3000 🎉
 
 ### Opción 2: Desarrollo Local
 
-```bash
-# Configuración automática
-./quickstart.sh
+#### Método Rápido: Scripts de Inicio
 
-# Luego inicia backend y frontend en terminales separadas
+Abre **dos terminales separadas** y ejecuta:
+
+**Terminal 1 - Backend:**
+```bash
+./start-backend.sh
+```
+
+**Terminal 2 - Frontend:**
+```bash
+./start-frontend.sh
+```
+
+Los scripts instalarán dependencias automáticamente la primera vez.
+
+#### Método Manual
+
+Si prefieres control total, sigue estos pasos:
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # En Windows: venv\Scripts\activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ## 🚀 Características
