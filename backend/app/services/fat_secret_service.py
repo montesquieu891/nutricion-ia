@@ -6,6 +6,7 @@ Handles OAuth2 authentication and food search functionality
 import base64
 import httpx
 import logging
+import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from app.config import settings
@@ -84,6 +85,72 @@ class FatSecretService:
         if self._is_token_expired():
             self.access_token = await self._get_access_token()
     
+    async def _make_api_request(
+        self, 
+        params: Dict[str, Any], 
+        max_retries: int = 3,
+        retry_delay: float = 1.0
+    ) -> Dict:
+        """
+        Make an API request with retry logic
+        
+        Args:
+            params: Query parameters for the API request
+            max_retries: Maximum number of retry attempts
+            retry_delay: Delay between retries in seconds
+        
+        Returns:
+            Response data as dictionary
+            
+        Raises:
+            httpx.HTTPError: If all retry attempts fail
+        """
+        await self._ensure_authenticated()
+        
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        client = await self._get_http_client()
+        last_exception = None
+        
+        for attempt in range(max_retries):
+            try:
+                response = await client.get(
+                    self.API_BASE_URL,
+                    headers=headers,
+                    params=params
+                )
+                response.raise_for_status()
+                return response.json()
+                
+            except httpx.HTTPStatusError as e:
+                last_exception = e
+                # Don't retry on 4xx errors (client errors)
+                if 400 <= e.response.status_code < 500:
+                    logger.error(f"Client error in FatSecret API: {e}")
+                    raise
+                    
+                # Retry on 5xx errors (server errors)
+                logger.warning(
+                    f"Server error in FatSecret API (attempt {attempt + 1}/{max_retries}): {e}"
+                )
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay * (attempt + 1))  # Exponential backoff
+                    
+            except (httpx.RequestError, httpx.TimeoutException) as e:
+                last_exception = e
+                logger.warning(
+                    f"Request error in FatSecret API (attempt {attempt + 1}/{max_retries}): {e}"
+                )
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay * (attempt + 1))
+        
+        # If we get here, all retries failed
+        logger.error(f"All retry attempts failed: {last_exception}")
+        raise last_exception
+    
     async def search_foods(self, search_query: str, max_results: int = 20) -> List[Dict[str, Any]]:
         """
         Search for foods in the FatSecret database
@@ -95,13 +162,6 @@ class FatSecretService:
         Returns:
             List of food items with basic information (name, ID, and main macros)
         """
-        await self._ensure_authenticated()
-        
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
-        }
-        
         params = {
             "method": "foods.search",
             "search_expression": search_query,
@@ -109,17 +169,104 @@ class FatSecretService:
             "max_results": max_results
         }
         
-        client = await self._get_http_client()
-        response = await client.get(
-            self.API_BASE_URL,
-            headers=headers,
-            params=params
-        )
-        response.raise_for_status()
-        data = response.json()
+        data = await self._make_api_request(params)
         
         # Parse and format the response
         return self._format_search_results(data)
+    
+    async def get_food_details(self, food_id: str) -> Dict[str, Any]:
+        """
+        Get detailed information about a specific food item
+        
+        Args:
+            food_id: The FatSecret food ID (obtained from search_foods)
+        
+        Returns:
+            Detailed food information including all available nutritional data
+            
+        Example:
+            {
+                "id": "12345",
+                "nombre": "Chicken Breast",
+                "descripcion": "Per 100g - Calories: 165 | Fat: 3.6g | Carbs: 0g | Protein: 31g",
+                "servings": [...],
+                "calorias": 165.0,
+                "proteina": 31.0,
+                "carbohidratos": 0.0,
+                "grasas": 3.6
+            }
+        """
+        params = {
+            "method": "food.get",
+            "food_id": food_id,
+            "format": "json"
+        }
+        
+        data = await self._make_api_request(params)
+        
+        # Parse and format the detailed response
+        return self._format_food_details(data)
+    
+    def _format_food_details(self, api_response: Dict) -> Dict[str, Any]:
+        """
+        Format detailed food information from FatSecret API response
+        
+        Args:
+            api_response: Raw response from FatSecret food.get API
+        
+        Returns:
+            Formatted food details with nutritional information
+        """
+        if "food" not in api_response:
+            logger.warning("No food data in API response")
+            return {}
+        
+        food = api_response["food"]
+        
+        formatted_food = {
+            "id": food.get("food_id"),
+            "nombre": food.get("food_name"),
+            "descripcion": food.get("food_description", ""),
+            "tipo": food.get("food_type", ""),
+            "url": food.get("food_url", ""),
+        }
+        
+        # Parse servings if available
+        servings_data = food.get("servings")
+        if servings_data:
+            servings = servings_data.get("serving", [])
+            if isinstance(servings, dict):
+                servings = [servings]
+            
+            formatted_food["servings"] = []
+            for serving in servings:
+                serving_info = {
+                    "serving_id": serving.get("serving_id"),
+                    "serving_description": serving.get("serving_description"),
+                    "metric_serving_amount": serving.get("metric_serving_amount"),
+                    "metric_serving_unit": serving.get("metric_serving_unit"),
+                    "calories": float(serving.get("calories", 0)),
+                    "protein": float(serving.get("protein", 0)),
+                    "carbohydrate": float(serving.get("carbohydrate", 0)),
+                    "fat": float(serving.get("fat", 0)),
+                }
+                formatted_food["servings"].append(serving_info)
+            
+            # Use the first serving as default nutritional values
+            if servings:
+                first_serving = servings[0]
+                formatted_food["calorias"] = float(first_serving.get("calories", 0))
+                formatted_food["proteina"] = float(first_serving.get("protein", 0))
+                formatted_food["carbohidratos"] = float(first_serving.get("carbohydrate", 0))
+                formatted_food["grasas"] = float(first_serving.get("fat", 0))
+        else:
+            # Try to parse from description if servings not available
+            description = food.get("food_description", "")
+            if description:
+                macros = self._parse_macros_from_description(description)
+                formatted_food.update(macros)
+        
+        return formatted_food
     
     def _format_search_results(self, api_response: Dict) -> List[Dict[str, Any]]:
         """
