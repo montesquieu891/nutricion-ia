@@ -5,27 +5,40 @@ Database session configuration
 from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import QueuePool
+from sqlalchemy.pool import QueuePool, StaticPool
 from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Create database engine with connection pooling and timeout configurations
-engine = create_engine(
-    settings.DATABASE_URL,
-    poolclass=QueuePool,
-    pool_size=5,                    # Number of connections to maintain in the pool
-    max_overflow=10,                # Maximum number of connections that can be created beyond pool_size
-    pool_timeout=30,                # Timeout in seconds for getting a connection from the pool
-    pool_recycle=3600,              # Recycle connections after 1 hour to avoid stale connections
-    pool_pre_ping=True,             # Enable pessimistic disconnect handling - test connections before use
-    echo=False,                     # Set to True for SQL query logging in development
-    connect_args={
-        "connect_timeout": 10,       # Connection timeout in seconds
-        "options": "-c timezone=utc" # Set timezone to UTC for all connections
-    }
-)
+# Determine if we're using SQLite or another database
+is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+
+# Configure engine based on database type
+if is_sqlite:
+    # SQLite-specific configuration
+    engine = create_engine(
+        settings.DATABASE_URL,
+        connect_args={"check_same_thread": False},  # Allow SQLite to be used with FastAPI
+        poolclass=StaticPool,  # Use StaticPool for SQLite
+        echo=False,
+    )
+else:
+    # PostgreSQL and other databases configuration
+    engine = create_engine(
+        settings.DATABASE_URL,
+        poolclass=QueuePool,
+        pool_size=5,                    # Number of connections to maintain in the pool
+        max_overflow=10,                # Maximum number of connections that can be created beyond pool_size
+        pool_timeout=30,                # Timeout in seconds for getting a connection from the pool
+        pool_recycle=3600,              # Recycle connections after 1 hour to avoid stale connections
+        pool_pre_ping=True,             # Enable pessimistic disconnect handling - test connections before use
+        echo=False,                     # Set to True for SQL query logging in development
+        connect_args={
+            "connect_timeout": 10,       # Connection timeout in seconds
+            "options": "-c timezone=utc" # Set timezone to UTC for all connections
+        }
+    )
 
 
 # Add event listener to handle connection issues
