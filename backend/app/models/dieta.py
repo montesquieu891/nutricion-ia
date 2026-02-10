@@ -2,7 +2,8 @@
 Database models for the application
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Float, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from app.db.session import Base
 
@@ -26,7 +27,7 @@ class Receta(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(255), nullable=False)
     descripcion = Column(Text)
-    ingredientes = Column(JSON)  # Native JSON type for better querying
+    ingredientes = Column(JSONB)  # JSONB for better query performance and indexing
     instrucciones = Column(Text)
     tiempo_preparacion = Column(Integer)  # en minutos
     calorias = Column(Integer)

@@ -35,9 +35,11 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-3. Iniciar los servicios:
+3. Iniciar los servicios (el script necesita permisos de ejecución):
 ```bash
-docker-compose up -d
+chmod +x start.sh
+./start.sh
+# o alternativamente: bash start.sh
 ```
 
 4. Acceder a las aplicaciones:
