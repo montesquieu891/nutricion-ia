@@ -25,6 +25,7 @@ from app.services.auth_service import (
     decode_token,
     get_refresh_token_expiration
 )
+from app.api.dependencies import get_current_user
 from app.config import settings
 
 router = APIRouter()

@@ -2,21 +2,73 @@
 
 Aplicación de gestión de dietas y recetas con inteligencia artificial.
 
+## ✅ Estado del Proyecto
+
+**El proyecto está OPERATIVO y listo para usar.** ✨
+
+- ✅ Backend FastAPI funcionando con SQLite
+- ✅ Frontend Next.js funcionando
+- ✅ Autenticación JWT implementada
+- ✅ CRUD completo de Dietas y Recetas
+- ✅ Base de datos inicializada con migraciones
+- ⚠️ Funciones de IA requieren API keys (opcional)
+
+## 🚀 Inicio Rápido
+
+**¿Primera vez?** Lee la [**Guía de Configuración Completa (SETUP.md)**](./SETUP.md) 📖
+
+### Opción 1: Con Docker (Recomendado)
+
+```bash
+# Iniciar todos los servicios
+./start.sh
+
+# O manualmente
+docker-compose up -d
+```
+
+Accede a: http://localhost:3000 🎉
+
+### Opción 2: Desarrollo Local
+
+```bash
+# Configuración automática
+./quickstart.sh
+
+# Luego inicia backend y frontend en terminales separadas
+```
+
 ## 🚀 Características
 
 - **Backend con FastAPI**: API REST robusta y rápida
 - **Frontend con Next.js**: Interfaz moderna y responsive
-- **Inteligencia Artificial**: Generación de dietas y recetas personalizadas
+- **Inteligencia Artificial**: Generación de dietas y recetas personalizadas (requiere OpenAI API Key)
 - **Base de datos SQLite/PostgreSQL**: SQLite para desarrollo local (sin configuración adicional), PostgreSQL para producción
 - **Dockerizado**: Fácil despliegue y desarrollo
+- **Autenticación JWT**: Sistema completo de autenticación con tokens de acceso y refresh
 
 ## 📋 Requisitos Previos
 
-- Docker y Docker Compose
+- Docker y Docker Compose (para ejecución con Docker)
 - Node.js 18+ (para desarrollo local)
 - Python 3.11+ (para desarrollo local)
 
-## 🔧 Instalación y Configuración
+## 🔧 Configuración Detallada
+
+**📖 Para instrucciones detalladas, ver [SETUP.md](./SETUP.md)**
+
+### Configurar Variables de Entorno
+
+Los archivos `.env` se crean automáticamente desde `.env.example` al ejecutar `./start.sh` o `./quickstart.sh`.
+
+**Backend** (`backend/.env`):
+- `DATABASE_URL`: Base de datos (SQLite por defecto)
+- `OPENAI_API_KEY`: API key de OpenAI (opcional, para IA)
+- `FATSECRET_CLIENT_ID` y `FATSECRET_CLIENT_SECRET`: Credenciales FatSecret API (opcional)
+- `JWT_SECRET_KEY`: Clave secreta para JWT (ya configurada por defecto)
+
+**Frontend** (`frontend/.env.local`):
+- `NEXT_PUBLIC_API_URL`: URL del backend (`http://localhost:8000` por defecto)
 
 ### Usando Docker (Recomendado)
 
@@ -26,36 +78,26 @@ git clone https://github.com/montesquieu891/nutricion-ia.git
 cd nutricion-ia
 ```
 
-2. Configurar variables de entorno:
-```bash
-# Backend
-cp backend/.env.example backend/.env
-
-# Frontend
-cp frontend/.env.example frontend/.env
-```
-
-Editar `backend/.env` y configurar las credenciales de las APIs:
-- **OpenAI API**: Obtener clave en https://platform.openai.com/api-keys
-- **FatSecret API**: Registrarse en https://platform.fatsecret.com/api/ y crear una aplicación para obtener `FATSECRET_CLIENT_ID` y `FATSECRET_CLIENT_SECRET`
-
-**Nota sobre la base de datos:**
-- Por defecto, la aplicación usa **SQLite** (`sqlite:///./nutricion.db`) que no requiere instalación adicional
-- Para usar **PostgreSQL** en producción, descomentar la línea correspondiente en `backend/.env` y instalar `psycopg2-binary`
-
-3. Iniciar los servicios (el script necesita permisos de ejecución):
+2. Iniciar con Docker:
 ```bash
 chmod +x start.sh
 ./start.sh
-# o alternativamente: bash start.sh
 ```
 
-4. Acceder a las aplicaciones:
+3. Acceder a las aplicaciones:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - Documentación API: http://localhost:8000/docs
 
 ### Desarrollo Local
+
+Usa el script de inicio rápido:
+
+```bash
+./quickstart.sh
+```
+
+O manualmente:
 
 #### Backend
 
@@ -64,6 +106,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
 pip install -r requirements.txt
+alembic upgrade head  # Inicializar base de datos
 uvicorn app.main:app --reload
 ```
 
@@ -74,6 +117,46 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## 🧪 Probar la Aplicación
+
+### Verificar Backend
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Ver documentación
+open http://localhost:8000/docs  # Mac
+# O visita en tu navegador: http://localhost:8000/docs
+```
+
+### Registrar Usuario y Probar API
+
+```bash
+# Registrar usuario
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Test User",
+    "email": "test@example.com",
+    "password": "password123",
+    "password_confirm": "password123",
+    "objetivo_calorias": 2000
+  }'
+
+# Usar el token recibido para crear una dieta
+TOKEN="tu_token_aqui"
+curl -X POST http://localhost:8000/api/v1/dieta/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Mi Primera Dieta",
+    "descripcion": "Plan de 7 días"
+  }'
+```
+
+**Ver [SETUP.md](./SETUP.md) para más ejemplos de uso de la API.**
 
 ## 📁 Estructura del Proyecto
 
