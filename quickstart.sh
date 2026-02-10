@@ -1,10 +1,11 @@
 #!/bin/bash
-# Quick Start Script for Nutricion IA - Local Development
+# Quick Start Script for Nutrición IA - Local Development
 # This script sets up and runs the application in local development mode (without Docker)
 
 set -e
+set -u
 
-echo "🚀 Nutricion IA - Configuración Rápida"
+echo "🚀 Nutrición IA - Configuración Rápida"
 echo "======================================"
 echo ""
 

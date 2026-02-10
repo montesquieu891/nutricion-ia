@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test script to verify Nutricion IA is operational
+# Test script to verify Nutrición IA is operational
 # This script tests the backend API endpoints
 
 GREEN='\033[0;32m'
@@ -11,7 +11,7 @@ BASE_URL="http://127.0.0.1:8000"
 PASSED=0
 FAILED=0
 
-echo "🧪 Testing Nutricion IA API"
+echo "🧪 Testing Nutrición IA API"
 echo "============================"
 echo ""
 
@@ -39,20 +39,25 @@ fi
 
 # Test 3: Register user
 echo -n "Test 3: User registration... "
+TIMESTAMP=$(date +%s)
 REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{
-    "nombre": "Test User",
-    "email": "test'$(date +%s)'@example.com",
-    "password": "testpass123",
-    "password_confirm": "testpass123",
-    "objetivo_calorias": 2000
-  }')
+  -d "{
+    \"nombre\": \"Test User\",
+    \"email\": \"test${TIMESTAMP}@example.com\",
+    \"password\": \"testpass123\",
+    \"password_confirm\": \"testpass123\",
+    \"objetivo_calorias\": 2000
+  }")
 
 if echo "$REGISTER_RESPONSE" | grep -q "access_token"; then
     echo -e "${GREEN}✅ PASS${NC}"
     ((PASSED++))
-    TOKEN=$(echo "$REGISTER_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])" 2>/dev/null || echo "")
+    TOKEN=$(echo "$REGISTER_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])" 2>&1)
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}⚠️  Warning: Failed to parse token from response${NC}"
+        TOKEN=""
+    fi
 else
     echo -e "${RED}❌ FAIL${NC}"
     echo "Response: $REGISTER_RESPONSE"

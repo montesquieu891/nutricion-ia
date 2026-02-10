@@ -1,6 +1,6 @@
-# 🚀 Guía de Configuración - Nutricion IA
+# 🚀 Guía de Configuración - Nutrición IA
 
-Esta guía te ayudará a configurar y ejecutar la aplicación Nutricion IA en tu máquina local.
+Esta guía te ayudará a configurar y ejecutar la aplicación Nutrición IA en tu máquina local.
 
 ## ✅ Estado del Proyecto
 
