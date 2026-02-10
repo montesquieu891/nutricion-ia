@@ -104,7 +104,6 @@ async def eliminar_dieta(dieta_id: int, db: Session = Depends(get_db)):
     
     db.delete(dieta)
     db.commit()
-    return None
 
 
 @router.post("/generar")

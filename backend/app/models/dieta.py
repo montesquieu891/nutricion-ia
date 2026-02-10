@@ -44,6 +44,8 @@ class Receta(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     nombre = Column(String(255), nullable=False)
     descripcion = Column(Text)
+    # JSON field for storing ingredients list or dict structure
+    # Example: {"items": ["ingredient1", "ingredient2"]} or ["ingredient1", "ingredient2"]
     ingredientes = Column(JSON)
     instrucciones = Column(Text)
     calorias = Column(Integer)

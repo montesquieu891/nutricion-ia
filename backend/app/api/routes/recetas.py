@@ -3,7 +3,7 @@ Rutas para gestión de recetas
 """
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -16,7 +16,9 @@ class RecetaBase(BaseModel):
     """Modelo base para receta"""
     nombre: str
     descripcion: Optional[str] = None
-    ingredientes: Optional[dict] = None
+    # Ingredientes can be a list of strings or a dict with structure
+    # Example: {"items": ["item1", "item2"]} or ["item1", "item2"]
+    ingredientes: Optional[Dict[str, Any]] = None
     instrucciones: Optional[str] = None
     calorias: Optional[int] = None
     proteina: Optional[float] = None
@@ -33,7 +35,7 @@ class RecetaUpdate(BaseModel):
     """Modelo para actualizar receta"""
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
-    ingredientes: Optional[dict] = None
+    ingredientes: Optional[Dict[str, Any]] = None
     instrucciones: Optional[str] = None
     calorias: Optional[int] = None
     proteina: Optional[float] = None
@@ -119,7 +121,6 @@ async def eliminar_receta(receta_id: int, db: Session = Depends(get_db)):
     
     db.delete(receta)
     db.commit()
-    return None
 
 
 @router.post("/buscar")
