@@ -181,6 +181,16 @@ async def refresh(token_request: RefreshTokenRequest, db: Session = Depends(get_
         raise credentials_exception
 
 
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """
+    Get current authenticated user information
+    
+    Returns the user details for the currently authenticated user
+    """
+    return current_user
+
+
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(token_request: RefreshTokenRequest, db: Session = Depends(get_db)):
     """

@@ -1,16 +1,27 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { Loading } from '@/components/Common';
+
 export default function Home() {
-  return (
-    <main style={{ padding: '2rem' }}>
-      <h1>Bienvenido a Nutricion IA</h1>
-      <p>Aplicación de gestión de dietas y recetas con inteligencia artificial</p>
-      <div style={{ marginTop: '2rem' }}>
-        <h2>Características principales:</h2>
-        <ul>
-          <li>Generación de dietas personalizadas con IA</li>
-          <li>Gestión de recetas nutritivas</li>
-          <li>Seguimiento de objetivos nutricionales</li>
-        </ul>
-      </div>
-    </main>
-  );
+  const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
+  
+  useEffect(() => {
+    if (!loading) {
+      if (isAuthenticated) {
+        router.push('/dashboard');
+      } else {
+        router.push('/auth/login');
+      }
+    }
+  }, [isAuthenticated, loading, router]);
+  
+  if (loading) {
+    return <Loading fullScreen text="Cargando..." />;
+  }
+  
+  return <Loading fullScreen text="Redirigiendo..." />;
 }
