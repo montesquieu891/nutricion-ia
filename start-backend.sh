@@ -63,5 +63,5 @@ echo ""
 echo "Presiona Ctrl+C para detener el servidor"
 echo ""
 
-# Start the server
+# Start the server (bound to localhost only for security)
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000

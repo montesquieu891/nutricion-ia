@@ -53,5 +53,5 @@ echo ""
 echo "Presiona Ctrl+C para detener el servidor"
 echo ""
 
-# Start the development server
+# Start the development server (port 3000 is configured in Next.js by default)
 npm run dev
